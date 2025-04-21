@@ -24,7 +24,7 @@ app.get('/mesa-risk', async (req, res) => {
 
     // 1) Build the exact MESA path URL
     const url = [
-      'https://www.mesa-nhlbi.org/MESACHDRiskCoronaryAge/api/score',
+      'https://internal.mesa-nhlbi.org/about/procedures/tools/mesa-score-risk-calculator',
       gender, age, ethnicity,
       diabetes, smoke, fhhx,
       chol, hdl, sbp,
