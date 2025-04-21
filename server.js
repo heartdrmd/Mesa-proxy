@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const path    = require('path');
 const axios   = require('axios');
@@ -8,16 +9,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// serve index.html on "/"
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// your proxy endpoint
 app.get('/mesa-risk', async (req, res) => {
   try {
-    // pull each field out of the query
     const {
       gender, age, ethnicity,
       diabetes, smoke, fhhx,
@@ -25,15 +22,25 @@ app.get('/mesa-risk', async (req, res) => {
       lipid, htnmed, cac
     } = req.query;
 
-    // build the correct path URL
-    const url = `https://www.mesa-nhlbi.org/MESACHDRiskCoronaryAge/api/score/`
-      + `${gender}/${age}/${ethnicity}/${diabetes}/${smoke}/${fhhx}`
-      + `/${chol}/${hdl}/${sbp}/${lipid}/${htnmed}/${cac}`;
+    // 1) Build the exact MESA path URL
+    const url = [
+      'https://www.mesa-nhlbi.org/MESACHDRiskCoronaryAge/api/score',
+      gender, age, ethnicity,
+      diabetes, smoke, fhhx,
+      chol, hdl, sbp,
+      lipid, htnmed, cac
+    ].join('/');
+
+    console.log('👉 Calling MESA API URL:', url);
 
     const response = await axios.get(url);
+
+    console.log('✅ MESA response.data:', response.data);
+    // Should be an object with { cac_riskscore: …, nocac_riskscore: … }
+
     res.json(response.data);
   } catch (err) {
-    console.error('MESA API error:', err.message);
+    console.error('❌ MESA API error:', err.message);
     res.status(500).json({ error: 'Failed to fetch MESA risk score.' });
   }
 });
