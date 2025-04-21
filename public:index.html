@@ -1,10 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>MESA Proxy</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>MESA Risk Calculator Proxy</title>
+</head>
 <body>
-  <!-- (your form HTML exactly as given above) -->
+  <h1>MESA 10‑Year CHD Risk & Coronary Age</h1>
+  <form id="mesaForm">
+    <!-- Gender -->
+    <label>Gender:
+      <select name="gender">
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+    </label><br>
+
+    <!-- Age -->
+    <label>Age (45–85):
+      <input type="number" name="age" min="45" max="85" required>
+    </label><br>
+
+    <!-- CAC Score -->
+    <label>CAC Score (Agatston):
+      <input type="number" name="cac" min="0" required>
+    </label><br>
+
+    <!-- Race/Ethnicity -->
+    <label>Race/Ethnicity:
+      <select name="ethnicity">
+        <option value="caucasian">Caucasian</option>
+        <option value="chineseamerican">Chinese American</option>
+        <option value="africanamerican">African American</option>
+        <option value="hispanic">Hispanic</option>
+      </select>
+    </label><br>
+
+    <!-- Diabetes -->
+    <fieldset>
+      <legend>Diabetes:</legend>
+      <label><input type="radio" name="diabetes" value="yes" required>Yes</label>
+      <label><input type="radio" name="diabetes" value="no">No</label>
+    </fieldset>
+
+    <!-- Smoking -->
+    <fieldset>
+      <legend>Currently Smoke:</legend>
+      <label><input type="radio" name="smoke" value="yes" required>Yes</label>
+      <label><input type="radio" name="smoke" value="no">No</label>
+    </fieldset>
+
+    <!-- Family History -->
+    <fieldset>
+      <legend>Family History of Heart Attack:</legend>
+      <label><input type="radio" name="fhhx" value="yes" required>Yes</label>
+      <label><input type="radio" name="fhhx" value="no">No</label>
+    </fieldset>
+
+    <!-- Total Cholesterol -->
+    <label>Total Cholesterol:
+      <input type="number" name="chol" step="0.1" required>
+      <select name="cholUnit">
+        <option value="mgdL">mg/dL</option>
+        <option value="mmolL">mmol/L</option>
+      </select>
+    </label><br>
+
+    <!-- HDL Cholesterol -->
+    <label>HDL Cholesterol:
+      <input type="number" name="hdl" step="0.1" required>
+      <select name="hdlUnit">
+        <option value="mgdL">mg/dL</option>
+        <option value="mmolL">mmol/L</option>
+      </select>
+    </label><br>
+
+    <!-- Systolic BP -->
+    <label>Systolic Blood Pressure:
+      <input type="number" name="sbp" step="0.1" required>
+      <select name="sbpUnit">
+        <option value="mmHg">mmHg</option>
+        <option value="kPa">kPa</option>
+      </select>
+    </label><br>
+
+    <!-- Medications -->
+    <fieldset>
+      <legend>Lipid‑Lowering Medication:</legend>
+      <label><input type="radio" name="lipid" value="yes" required>Yes</label>
+      <label><input type="radio" name="lipid" value="no">No</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Hypertension Medication:</legend>
+      <label><input type="radio" name="htnmed" value="yes" required>Yes</label>
+      <label><input type="radio" name="htnmed" value="no">No</label>
+    </fieldset>
+
+    <button type="submit">Calculate Risk</button>
+  </form>
+
+  <div id="result"></div>
+
   <script>
-    /* (your JS exactly as given above) */
+    document.getElementById('mesaForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+
+      // Convert units if needed
+      let chol = parseFloat(form.get('chol'));
+      if (form.get('cholUnit') === 'mmolL') chol = Math.round(chol * 38.67);
+
+      let hdl = parseFloat(form.get('hdl'));
+      if (form.get('hdlUnit') === 'mmolL') hdl = Math.round(hdl * 38.67);
+
+      let sbp = parseFloat(form.get('sbp'));
+      if (form.get('sbpUnit') === 'kPa') sbp = Math.round(sbp * 7.50062);
+
+      // Build query object
+      const params = {
+        gender: form.get('gender'),
+        age:   form.get('age'),
+        ethnicity: form.get('ethnicity'),
+        diabetes:  form.get('diabetes'),
+        smoke:     form.get('smoke'),
+        fhhx:      form.get('fhhx'),
+        chol, hdl, sbp,
+        lipid: form.get('lipid'),
+        htnmed: form.get('htnmed'),
+        cac:    form.get('cac')
+      };
+
+      // Call your own proxy endpoint
+      const query = new URLSearchParams(params).toString();
+      const res = await fetch(`/mesa-risk?${query}`);
+      const data = await res.json();
+
+      document.getElementById('result').innerHTML = `
+        <p><strong>10‑yr CHD risk with CAC:</strong> ${data.cac_riskscore}%</p>
+        <p><strong>10‑yr CHD risk without CAC:</strong> ${data.nocac_riskscore}%</p>
+      `;
+    });
   </script>
 </body>
 </html>
